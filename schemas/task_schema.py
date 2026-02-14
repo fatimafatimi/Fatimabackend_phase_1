@@ -1,10 +1,16 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from typing import Optional
 
 class TaskCreate(BaseModel):
-    title: str = Field (..., min_length =3)
-    description: str
+    title: str 
+    description: Optional[str] = None
     
 class TaskResponse(BaseModel):
     id: int
     title: str
-    description: str
+    description: Optional[str]
+    completed: bool
+    
+    model_config = {
+        "from_attributes": True
+    }
