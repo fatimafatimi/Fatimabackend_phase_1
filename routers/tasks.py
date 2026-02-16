@@ -24,6 +24,14 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 def get_tasks(db: Session = Depends(get_db)):
     return db.query(Task).all()
 
+# GET single Task by ID
+@router.get("/{task_id}", response_model=TaskResponse)
+def get_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
 # UPDATE task
 @router.put("/{task_id}", response_model=TaskResponse)
 def update_task(task_id: int, task: TaskCreate, db: Session = Depends(get_db)):
