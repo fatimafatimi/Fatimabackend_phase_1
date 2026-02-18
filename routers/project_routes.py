@@ -5,7 +5,7 @@ from models.user import User
 from models.project import Project
 from schemas.project_schema import ProjectCreate, ProjectResponse
 
-router = APIRouter (prefix="/projects", tags=["Projects"])
+project_router = APIRouter (prefix="/projects", tags=["Projects"])
 
 #Creating Project
 @router.post("/", response_model = ProjectResponse)
