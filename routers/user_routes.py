@@ -4,7 +4,7 @@ from database import get_db
 from models.user import User
 from schemas.user_schema import UserLogin, UserResponse, UserRegister
 
-user_router = APIRouter (prefix="/users", tags=["Users"])
+router = APIRouter (prefix="/users", tags=["Users"])
 
 @router.post("/registers" , response_model = UserResponse)
 def register(user: UserRegister, db: Session = Depends(get_db)):
