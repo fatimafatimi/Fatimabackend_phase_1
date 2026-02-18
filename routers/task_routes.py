@@ -6,7 +6,7 @@ from models.project import Project
 from typing import List
 from schemas.task_schema import TaskCreate, TaskResponse, TaskUpdate
 
-router = APIRouter (prefix="/tasks", tags=["Tasks"])
+task_router = APIRouter (prefix="/tasks", tags=["Tasks"])
 
 @router.post("/project/{project_id}/tasks", response_model=TaskResponse)
 def create_task(project_id: int, task:TaskCreate, db: Session = Depends(get_db)):
