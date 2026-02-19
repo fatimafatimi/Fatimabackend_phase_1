@@ -1,4 +1,3 @@
-# utils/security.py
 from fastapi import Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from database import get_db
