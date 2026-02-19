@@ -7,6 +7,8 @@ from utils.security import hash_password, verify_password, get_current_user
 from utils.jwt_handler import create_access_token
 from datetime import timedelta
 
+from fastapi import Form 
+
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
 # Register a new user
@@ -27,12 +29,14 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-
-# Login and get JWT token
 @user_router.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
+def login(
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    db_user = db.query(User).filter(User.email == username).first()
+    if not db_user or not verify_password(password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     token_expires = timedelta(minutes=30)
@@ -44,3 +48,4 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 @user_router.get("/me", response_model=UserResponse)
 def read_me(current_user: User = Depends(get_current_user)):
     return current_user
+
