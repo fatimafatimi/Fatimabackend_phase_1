@@ -1,10 +1,9 @@
-# utils/jwt_handler.py
 from jose import JWTError, jwt
 from fastapi import HTTPException
 from datetime import datetime, timedelta
+from config.config import SECRET_KEY
 
 
-SECRET_KEY = "your-secret-key" 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

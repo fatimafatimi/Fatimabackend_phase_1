@@ -1,11 +1,13 @@
-# utils/security.py
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User
 from utils.jwt_handler import decode_access_token
 from passlib.context import CryptContext
 
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -17,22 +19,16 @@ def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
 
-
-
-def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing token")
-    
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Invalid auth scheme")
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-    
-    payload = decode_access_token(token)
-    user = db.query(User).filter(User.email == payload["sub"]).first()
-    if user is None:
+        payload = decode_access_token(token)
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
     return user
