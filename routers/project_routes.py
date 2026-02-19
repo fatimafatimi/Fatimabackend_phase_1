@@ -5,10 +5,10 @@ from models.user import User
 from models.project import Project
 from schemas.project_schema import ProjectCreate, ProjectResponse
 
-router = APIRouter (prefix="/projects", tags=["Projects"])
+project_router = APIRouter (prefix="/projects", tags=["Projects"])
 
 #Creating Project
-@router.post("/", response_model = ProjectResponse)
+@project_router.post("/", response_model = ProjectResponse)
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     owner= db.query(User).filter(User.id == project.owner_id).first()
     if not owner:
@@ -26,13 +26,13 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     return new_project
 
 #Getting All Projects
-@router.get("/", response_model=list[ProjectResponse])
+@project_router.get("/", response_model=list[ProjectResponse])
 def get_project(db: Session = Depends(get_db)):
     return db.query(Project).all()
 
 
 #Getting Project by ID
-@router.get("/{id}", response_model=ProjectResponse)
+@project_router.get("/{id}", response_model=ProjectResponse)
 def get_projectbyid(id: int, db: Session = Depends(get_db)):
     project= db.query (Project).filter(Project.id == id).first()
     if not project:
@@ -41,7 +41,7 @@ def get_projectbyid(id: int, db: Session = Depends(get_db)):
 
 
 #Deleting Project
-@router.delete("/{id}")
+@project_router.delete("/{id}")
 def delete_project(id: int , db: Session = Depends(get_db)):
     project= db.query (Project).filter(Project.id == id).first()
     if not project:

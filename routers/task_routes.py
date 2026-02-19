@@ -6,9 +6,9 @@ from models.project import Project
 from typing import List
 from schemas.task_schema import TaskCreate, TaskResponse, TaskUpdate
 
-router = APIRouter (prefix="/tasks", tags=["Tasks"])
+task_router = APIRouter (prefix="/tasks", tags=["Tasks"])
 
-@router.post("/project/{project_id}/tasks", response_model=TaskResponse)
+@task_router.post("/{project_id}", response_model=TaskResponse)
 def create_task(project_id: int, task:TaskCreate, db: Session = Depends(get_db)):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
@@ -27,12 +27,12 @@ def create_task(project_id: int, task:TaskCreate, db: Session = Depends(get_db))
     
     return new_task
 
-@router.get("/projects/{project_id}/tasks", response_model=List[TaskResponse])
+@task_router.get("/projects/{project_id}", response_model=List[TaskResponse])
 def get_all(project_id: int , db: Session = Depends(get_db)):
     return db.query(Task).filter(Task.project_id == project_id).all()
 
 
-@router.put("/tasks/{task_id}", response_model= TaskResponse)
+@task_router.put("/{task_id}", response_model= TaskResponse)
 def update_task(task_id:int, task:TaskUpdate, db: Session = Depends (get_db)):
     db_task = db.query(Task).filter (Task.id == task_id).first()
     if not db_task:
@@ -47,7 +47,7 @@ def update_task(task_id:int, task:TaskUpdate, db: Session = Depends (get_db)):
     return db_task
     
 
-@router.delete("/tasks/{task_id}")
+@task_router.delete("/{task_id}")
 def delete_project(task_id: int , db: Session = Depends(get_db)):
     db_task= db.query (Task).filter(Task.id == task_id).first()
     if not db_task:
