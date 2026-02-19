@@ -1,4 +1,3 @@
-# utils/jwt_handler.py
 from jose import JWTError, jwt
 from fastapi import HTTPException
 from datetime import datetime, timedelta
