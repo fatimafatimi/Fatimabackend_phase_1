@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
 
-# Association table for many-to-many between roles and permissions
+
 role_permissions = Table(
     "role_permissions",
     Base.metadata,
