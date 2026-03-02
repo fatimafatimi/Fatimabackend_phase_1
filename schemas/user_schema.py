@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from typing import Optional
+from schemas.role import RoleResponse
  
 class UserRegister(BaseModel):
     username: str
@@ -13,7 +15,7 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
-    
+    role: Optional[RoleResponse]
     
     class Config:
-        orm_mode = True
+        from_attributes = True

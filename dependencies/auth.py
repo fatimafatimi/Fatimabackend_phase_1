@@ -5,7 +5,8 @@ from utils.security import get_current_user
 from models.user import User
 from models.project import Project
 from models.task import Task
-from utils.security import get_current_user
+from dependencies.permissions import require_permission
+
 
 # get current user
 def get_user(current_user: User = Depends(get_current_user)):
@@ -14,7 +15,7 @@ def get_user(current_user: User = Depends(get_current_user)):
 
 # admin only
 def require_admin(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if not current_user.role or current_user.role.name != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -35,7 +36,10 @@ def require_project_owner(
             detail="Project not found"
         )
 
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+    if (
+        not current_user.role 
+        or current_user.role.name != "admin"
+    ) and project.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access this project"
@@ -61,15 +65,13 @@ def require_task_owner(
         raise HTTPException(status_code=404, detail="Associated project not found")
 
 
-    if current_user.role != "admin" and task.project.owner_id != current_user.id:
+    if (
+        not current_user.role 
+        or current_user.role.name != "admin"
+    ) and project.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access this task"
         )
     return task
 
-
-def require_admin(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized: Admins only")
-    return current_user
