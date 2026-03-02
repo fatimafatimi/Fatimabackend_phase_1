@@ -6,13 +6,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, Depends, status
 from dependencies.auth import get_user
 
-# ----------------------
-# CREATE PROJECT
-# ----------------------
+
 def create_project(db: Session, project_data, current_user: User = Depends(get_user)):
-    """
-    Create a new project assigned to the current user.
-    """
     new_project = Project(
         name=project_data.name,
         description=project_data.description,
@@ -23,15 +18,13 @@ def create_project(db: Session, project_data, current_user: User = Depends(get_u
     db.refresh(new_project)
     return new_project
 
-# ----------------------
-# UPDATE PROJECT
-# ----------------------
+
 def update_project(db: Session, project_id: int, project_data, current_user: User = Depends(get_user)):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Only admin or project owner can update
+    
     if current_user.role != "admin" and project.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -45,24 +38,18 @@ def update_project(db: Session, project_id: int, project_data, current_user: Use
     db.refresh(project)
     return project
 
-# ----------------------
-# GET ALL PROJECTS
-# ----------------------
+
 def get_all_projects(db: Session):
     return db.query(Project).all()
 
-# ----------------------
-# GET PROJECT BY ID
-# ----------------------
+
 def get_project_by_id(db: Session, project_id: int):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
 
-# ----------------------
-# DELETE PROJECT
-# ----------------------
+
 def delete_project(db: Session, project_id: int, current_user: User = Depends(get_user)):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
