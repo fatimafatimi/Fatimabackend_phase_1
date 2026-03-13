@@ -5,7 +5,7 @@ from utils.security import hash_password, verify_password
 from utils.jwt_handler import create_access_token
 from datetime import timedelta
 from fastapi import Depends,status
-from dependencies.auth import require_admin, get_user
+from dependencies.auth import get_current_user, require_admin
 from models.role import Role
 
 def create_user(db: Session, user, current_user: User):

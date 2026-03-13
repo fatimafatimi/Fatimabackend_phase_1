@@ -7,9 +7,9 @@ from utils.jwt_handler import decode_access_token
 from passlib.context import CryptContext
 from models.role import Role
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-# Password hashing
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str):
@@ -35,3 +35,4 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="Invalid token")
     
     return user
+

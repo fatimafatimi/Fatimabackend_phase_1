@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from utils.security import get_current_user
+from utils.security import get_current_user as security_current_user
 from models.user import User
 from models.project import Project
 from models.task import Task
@@ -9,9 +9,8 @@ from dependencies.permissions import require_permission
 
 
 # get current user
-def get_user(current_user: User = Depends(get_current_user)):
+def get_current_user(current_user: User = Depends(security_current_user)):
     return current_user
-
 
 # admin only
 def require_admin(current_user: User = Depends(get_current_user)):

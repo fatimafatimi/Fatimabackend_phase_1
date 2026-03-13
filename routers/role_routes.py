@@ -8,9 +8,7 @@ from typing import List
 
 role_router = APIRouter(prefix="/roles", tags=["Roles"])
 
-# ----------------------
-# Pydantic model for assigning permissions
-# ----------------------
+
 class PermissionAssign(BaseModel):
     permission_names: List[str]
 
@@ -31,13 +29,6 @@ def assign_permissions_route(
     db: Session = Depends(get_db),
     current_user = Depends(require_permission("manage_roles"))
 ):
-    """
-    Assign permissions to a role by sending JSON with permission names.
-    Example JSON:
-    {
-        "permission_names": ["create_project", "update_project", "view_all_projects"]
-    }
-    """
     return assign_permissions_to_role(db, role_id, permissions.permission_names)
 
 
