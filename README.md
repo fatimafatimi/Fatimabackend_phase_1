@@ -1,303 +1,236 @@
-# 🚀 Day 01 – Simple Task API
-### 📌 Project Overview
+# Mini Project Management System (Branch: RBAC Implementation)
 
-This project is a basic REST API built using FastAPI.
-It demonstrates core backend development concepts including routing, request handling, JSON responses, and automatic documentation.
-
-The API uses in-memory storage (Python list) to manage tasks and performs basic CRUD operations.
-
-### 🎯 Objective
-
-The goal of Day 01 was to:
-
-Understand FastAPI fundamentals
-
-Learn API routing
-
-Work with request bodies
-
-Implement CRUD operations
-
-Explore automatic Swagger documentation
-
-### 🛠️ Tech Stack
-Python
-FastAPI
-Uvicorn
-
-### 📂 Features Implemented
-Endpoints
-
-Method	Endpoint	Description
-
-GET	/	Welcome message
-
-GET	/tasks	Retrieve all tasks
-
-POST	/tasks	Create a new task
-
-GET	/tasks/{task_id}	Retrieve task by ID
-
-DELETE	/tasks/{task_id}	Delete task by ID
-
-### 📌 Key Concepts Learned
-API Routing with FastAPI
-
-JSON request & response handling
-
-Path parameters
-
-Basic error handling using HTTPException
-
-Pydantic model usage
-
-Swagger UI testing (/docs)
-
-### ▶️ How to Run
-Create virtual environment
-
-Install dependencies:
-
-pip install fastapi uvicorn
-
-Run server:
-
-uvicorn main:app --reload
-
-Open:
-
-http://127.0.0.1:8000/docs
-
-### ⚠️ Note
-This project uses in-memory storage.
-
-All tasks are lost when the server restarts.
-
-### 🧠 Learning Outcome
-By completing Day 01, I gained hands-on experience with building a basic REST API and understanding FastAPI fundamentals.
-# Mini Project Management System (Day 04)  
-**Technology:** FastAPI + PostgreSQL + SQLAlchemy  
-
-## Overview
-This project is a **backend system** to manage Users, Projects, and Tasks.  
-It allows users to register, login, create projects, assign tasks, and track task status (`pending`, `in_progress`, `completed`) using a PostgreSQL database.
+This branch implements authentication and role-based access control (RBAC) using FastAPI, JWT, and SQLAlchemy.
 
 ---
 
-## Features
-- **User Management:** Register and login users.  
-- **Project Management:** Create, view all, and view specific projects.  
-- **Task Management:** Create tasks under a project, retrieve tasks by ID or project.  
-- **Database:** Persistent storage using PostgreSQL and SQLAlchemy ORM.  
-- **API Documentation:** Interactive testing via Swagger UI (`/docs`).  
+## 🚀 Features Implemented
+
+* User authentication with JWT
+* Password hashing using bcrypt
+* Role-based access control (Admin & Owner-based permissions)
+* Project-task relationship management
+* Protected routes using dependencies
+* Proper HTTP status handling (401, 403, 404)
 
 ---
 
-## Project Structure
+## 🛠 Tech Stack
+
+* FastAPI
+* SQLAlchemy ORM
+* JWT Authentication
+* OAuth2PasswordBearer
+* Passlib (bcrypt)
+* SQLite / Configured Database
+
+---
+
+## 🔐 Authentication System
+
+Authentication is handled using JWT tokens.
+
+### Login Flow
+
+1. User logs in using email and password.
+2. Password is verified using `verify_password`.
+3. If valid, a JWT token is generated containing:
+
+```json
+{
+  "sub": "user_email",
+  "role": "user_role"
+}
 ```
 
-Project/
-├── main.py              # App entry point
-├── database.py          # Database connection & session
-├── models/              # ORM models (User, Project, Task)
-├── schemas/             # Pydantic request/response models
-├── routers/             # API routes (users, projects, tasks)
-└── .env                 # Database credentials
+4. Token is returned as:
 
-````
+```json
+{
+  "access_token": "JWT_TOKEN",
+  "token_type": "bearer"
+}
+```
 
 ---
 
-## Getting Started
+## Password Security
 
-1. **Clone the repository**  
-```bash
-git clone <repo-url>
-cd Mini-PMS
-````
+Passwords are securely hashed using:
 
-2. **Set up virtual environment & install dependencies**
+* bcrypt via Passlib
 
-```bash
-python -m venv menv
-source menv/Scripts/activate  # Windows
-pip install -r requirements.txt
-```
+Functions used:
 
-3. **Configure `.env` file**
-
-```env
-DATABASE_URL=postgresql://postgres:password@localhost:5432/taskdb
-```
-
-4. **Run the server**
-
-```bash
-uvicorn main:app --reload
-```
-
-5. **Test API via Swagger UI**
-   Open: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+* `hash_password(password)`
+* `verify_password(plain_password, hashed_password)`
 
 ---
 
-## Endpoints Overview
+## 👤 User Management
 
-* **Users:** `/users/registers`, `/users/login`
-* **Projects:** `/projects/` (POST, GET, GET by ID)
-* **Tasks:** `/tasks/project/{project_id}/tasks`, `/tasks/`
+### Create User
 
----
+* Only users with **admin role** can create new users.
+* Implemented using `require_admin` dependency.
+* Prevents duplicate email registration.
 
-## Key Learnings
+If email already exists:
 
-* Modular backend design with **APIRouter**
-* SQLAlchemy ORM and database relationships
-* Dependency injection for database sessions
-* Persistent storage and relational data integrity
-* Testing API endpoints using **Swagger UI**
-
-
-# Alembic Setup & Usage for Mini PMS
-
-This document explains how **Alembic** is used in the Mini Project Management System (Mini PMS) to manage **database migrations** safely and efficiently.
+* Returns `400 Bad Request`
 
 ---
 
-## What is Alembic
+## 📂 Task Management Authorization
 
-Alembic is a **database migration tool** used with **SQLAlchemy** to track, version, and apply schema changes in a safe and organized way.  
-It works as a **version control system for your database**, similar to how Git tracks code changes.
+Authorization is enforced inside handler logic using:
 
----
-
-## Why Use Alembic
-
-In a real project, database schemas evolve over time:
-
-- Adding new tables  
-- Modifying columns  
-- Adding foreign keys  
-- Removing tables or columns  
-
-## Alembic provides:
-
-- **Autogenerated migrations** from your SQLAlchemy models  
-- **Safe upgrades and downgrades**  
-- **Version tracking** via `alembic_version` table  
-- **Team-friendly schema management**  
+* Role checking
+* Project ownership validation
 
 ---
 
-## Project Structure
+### Create Task
 
-After initializing Alembic in Mini PMS:
+Allowed if:
 
-```
+* User role is `"admin"`
+  OR
+* User is the owner of the project
 
-Mini PMS/
-├─ alembic.ini           # Alembic configuration file
-├─ alembic/
-│  ├─ env.py             # Migration environment file
-│  └─ versions/          # Folder for migration scripts
-├─ models.py             # SQLAlchemy models
-├─ main.py               # FastAPI entry point
-└─ .venv/                # UV virtual environment
+Otherwise:
 
-````
+* Returns `403 Forbidden`
 
 ---
 
-## Setup Steps
+### Get Tasks by Project
 
-1. Activate the project virtual environment (`.venv`):
+Allowed if:
 
-```cmd
-.venv\Scripts\activate
-````
+* User role is `"admin"`
+  OR
+* User owns the project
 
-2. Install Alembic and PostgreSQL driver:
+---
 
-```cmd
-pip install alembic psycopg2-binary
-```
+### Update Task
 
-3. Initialize Alembic:
+Allowed if:
 
-```cmd
-alembic init alembic
-```
+* User role is `"admin"`
+  OR
+* User owns the associated project
 
-4. Configure your **database URL** in `alembic.ini`:
-
-```ini
-sqlalchemy.url = postgresql+psycopg2://<username>:<password>@localhost:5432/<database_name>
-```
-
-5. Link your models in `alembic/env.py`:
+Partial updates supported using:
 
 ```python
-from models import Base
-target_metadata = Base.metadata
+task.dict(exclude_unset=True)
 ```
 
 ---
 
-## Creating Migrations
+### Delete Task
 
-After modifying or creating models:
+Allowed if:
 
-```cmd
-alembic revision --autogenerate -m "describe your changes"
+* User role is `"admin"`
+  OR
+* User owns the associated project
+
+Returns:
+
+```json
+{
+  "message": "Task deleted"
+}
 ```
 
-* Generates a migration file in `alembic/versions/`
-* Always **name your foreign keys and constraints** in models to allow safe downgrades:
+---
+
+## 🔐 Authorization Logic Pattern
+
+This branch implements:
+
+### 1️⃣ Role-Based Check
 
 ```python
-owner_id = Column(Integer, ForeignKey("users.id", name="fk_projects_owner_id"))
+if current_user.role != "admin":
+```
+
+### 2️⃣ Ownership Check
+
+```python
+project.owner_id == current_user.id
+```
+
+This ensures:
+
+* Admin has full access.
+* Non-admin users can only manage their own project resources.
+
+---
+
+## 🧱 Security Architecture
+
+Authentication:
+
+* OAuth2PasswordBearer
+* JWT token decoding
+* get_current_user dependency
+
+Authorization:
+
+* Admin-only access for user creation
+* Project ownership validation for task actions
+* HTTP 403 for unauthorized access
+* HTTP 401 for invalid tokens
+* HTTP 404 for missing resources
+
+---
+
+## 📁 Project Structure (Relevant Parts)
+
+```
+models/
+    user.py
+    project.py
+    task.py
+
+handlers/
+    user_handler.py
+    task_handler.py
+
+dependencies/
+    auth.py
+
+utils/
+    jwt_handler.py
+    security.py
 ```
 
 ---
 
-## Applying Migrations
+## ✅ What This Branch Demonstrates
 
-To apply migrations to the PostgreSQL database:
-
-```cmd
-alembic upgrade head
-```
-
-* `head` applies the latest migration
-* Alembic automatically creates the tables and updates the `alembic_version` table
+* Secure JWT authentication
+* Role-based access control (RBAC)
+* Ownership-based authorization
+* Clean dependency injection in FastAPI
+* Proper separation of concerns (models, handlers, dependencies, utils)
 
 ---
 
-## Rolling Back Migrations
+## 📌 Notes
 
-To revert the last migration:
+This branch focuses on:
 
-```cmd
-alembic downgrade -1
-```
+* Authentication
+* Admin-restricted user creation
+* Task-level authorization
+* Project ownership enforcement
 
-* Only works if all foreign keys and constraints are **properly named**
-* Always test in a development environment before applying to production
-
----
-
-## Best Practices
-
-1. Always **activate the `.venv`** before running Alembic commands
-2. Keep **migration scripts under version control**
-3. **Name foreign keys and constraints** in models to ensure safe downgrades
-4. Use **descriptive messages** when creating migrations:
-
-   ```cmd
-   alembic revision --autogenerate -m "add role column to users"
-   ```
-5. Apply migrations in development before deploying to production
-
----
+Permission-based dynamic RBAC is not implemented in this branch.
 
 
+ 
