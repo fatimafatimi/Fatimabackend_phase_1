@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -7,6 +7,7 @@ from models.subscription import Subscription
 from models.user import User
 from dependencies import get_current_user
 from utils.stripe_service import cancel_subscription
+from utils.email_service import send_subscription_cancelled_email
 
 router = APIRouter(
     prefix="/subscription",
@@ -36,9 +37,10 @@ def get_my_subscription(
     }
 
 
-#  Cancel Subscription
+# Cancel Subscription
 @router.post("/cancel")
 def cancel_my_subscription(
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -63,13 +65,18 @@ def cancel_my_subscription(
     db.commit()
     db.refresh(subscription)
 
+    # Send cancellation email in background
+    background_tasks.add_task(
+        send_subscription_cancelled_email,
+        subscription.user.email
+    )
+
     return {
         "message": "Subscription cancelled successfully",
         "subscription_id": subscription.id,
         "plan_id": subscription.plan_id
     }
-    
-    
+
 
 # Get Subscription Status
 @router.get("/status")
@@ -85,3 +92,7 @@ def get_subscription_status(
         return {"status": "none"}
 
     return {"status": subscription.status, "end_date": subscription.end_date}
+
+
+
+
