@@ -1,155 +1,218 @@
-# Email Notification System
+# Project Management API
 
 ## Overview
 
-The Email Notification System is designed to send automated emails to users based on key events within the application, such as successful payments, failed transactions, and subscription cancellations. It ensures that users are consistently informed about their account and billing activities.
+This is a fully-featured **Project Management API** built with **FastAPI**. The project demonstrates a complete, production-ready backend system implementing modern API development concepts including authentication, role-based access control, database migrations, email notifications, and payment processing.
+
+This repository is the **final merged version** incorporating all individual branches and features:
+
+* **FastAPI Day 2, Day 3, Day 4** – Fundamental FastAPI concepts and REST API design.
+* **JWT Auth** – User authentication with JWT tokens.
+* **Handler Config** – Structured request handling and separation of concerns.
+* **Alembic** – Database migrations management.
+* **Rollbase** – Base models and reusable project structures.
+* **RBAC with Permissions** – Role-based access control with permission management.
+* **FastAPI Concepts** – Advanced FastAPI features and dependency injection.
+* **Payment Module** – Subscription and payment integration (Stripe).
+* **Email Notification** – Email notifications and email verification workflow.
 
 ---
 
 ## Features
 
-- **User Authentication & Authorization**
-  - Login and register users
-  - JWT-based token authentication
-  - Role-based access (Admin vs User)
-  
-- **Stripe Payment Integration**
-  - One-time payments
-  - Subscription payments
-  - Webhook support for payment events
-  - Sandbox (test) and live modes
+* **User Management**
 
-- **Secure & Scalable**
-  - Passwords hashed with industry-standard algorithms
-  - Sensitive data secured via environment variables
-  - Easily extendable for future payment gateways
-* Sends email notifications for successful payments
-* Sends email notifications for failed transactions
-* Sends email notifications when a subscription is cancelled
-* Uses asynchronous processing to avoid blocking API responses
-* Supports dynamic HTML email templates
+  * User registration and login
+  * JWT-based authentication
+  * Role-based access control (Admin / User)
+  * Email verification system
 
----
+* **Project Management**
 
-## Tech Stack
+  * Create, read, update, delete (CRUD) projects
+  * Assign users to projects based on permissions
+  * Pagination and filtering support
 
-* FastAPI (backend framework)
-* SMTP (Gmail) for email delivery
-* Jinja2 for HTML template rendering
-* smtplib for sending emails
-* python-dotenv for environment variable management
+* **Payments**
+
+  * Subscription creation and cancellation
+  * Stripe sandbox integration
+  * Payment notification emails
+
+* **Notifications**
+
+  * Email notifications for important events
+  * Verification emails for new users
+
+* **Database & Migrations**
+
+  * SQLAlchemy ORM
+  * Alembic migrations for database schema management
 
 ---
 
-## Project Structure
+## Folder Structure
 
-```id="wf8ls5"
-project/
+```
+project-management-api/
 │
-├── config/
-│   └── email_config.py
+├── app/
+│   ├── main.py                  # FastAPI application entry point
+│   ├── config.py                # Configuration and environment settings
+│   ├── database.py              # Database connection and session management
+│   ├── models/                  # SQLAlchemy models
+│   │   ├── user.py
+│   │   ├── project.py
+│   │   └── role_permission.py
+│   ├── schemas/                 # Pydantic request/response schemas
+│   ├── handlers/                # Business logic handlers
+│   ├── routers/                 # API routes grouped by functionality
+│   │   ├── auth.py
+│   │   ├── users.py
+│   │   ├── projects.py
+│   │   ├── payments.py
+│   │   └── webhooks.py
+│   ├── dependencies/            # Dependency injection and permissions
+│   ├── services/                # External services (Stripe, Email)
+│   └── utils/                   # Utility functions
 │
-├── utils/
-│   └── email_service.py
-│
-├── templates/
-│   └── emails/
-│       ├── payment_success.html
-│       ├── payment_failed.html
-│       └── subscription_cancelled.html
-│
-├── routers/
-│   ├── webhook_router.py
-│   └── subscription_router.py
+├── migrations/                  # Alembic migrations
+├── requirements.txt             # Python dependencies
+├── README.md
+└── .env.example                 # Example environment variables
 ```
 
 ---
 
-## Environment Variables
+## Requirements
 
-Create a `.env` file in the root directory and configure the following:
+* Python 3.11+
+* PostgreSQL database
+* Stripe Sandbox account for payment testing
+* SMTP-enabled email account for notifications
 
-```id="9trhk6"
+---
+
+## Installation and Setup
+
+1. **Clone the repository**
+
+```bash
+git clone <your-repo-url>
+cd project-management-api
+```
+
+2. **Create a virtual environment**
+
+```bash
+python -m venv .venv
+```
+
+3. **Activate the virtual environment**
+
+* **Windows (CMD)**:
+
+```bash
+.venv\Scripts\activate
+```
+
+* **Linux / macOS**:
+
+```bash
+source .venv/bin/activate
+```
+
+4. **Install dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+5. **Set up environment variables**
+
+Create a `.env` file based on `.env.example`:
+
+```
+DATABASE_URL=postgresql://username:password@localhost:5432/db_name
+SECRET_KEY=your_jwt_secret
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
-EMAIL_FROM=Mini PMS <your_email@gmail.com>
+STRIPE_API_KEY=your_stripe_key
+```
+
+6. **Run database migrations**
+
+```bash
+alembic upgrade head
+```
+
+7. **Seed initial roles and permissions (RBAC)**
+
+```bash
+python seed_rbac.py
 ```
 
 ---
 
-## Steps to Run
+## Running the Application
 
-### 1. Clone the Repository
-
-```bash id="z3k91p"
-git clone <your-repository-url>
-cd <your-project-folder>
+```bash
+uvicorn app.main:app --reload
 ```
 
-### 2. Create and Activate Virtual Environment
+The API will be available at `http://127.0.0.1:8000`.
 
-```bash id="u9a2bc"
-python -m venv venv
-venv\Scripts\activate   # Windows
-```
-
-### 3. Install Dependencies
-
-```bash id="p0m4tx"
-pip install -r requirements.txt
-```
-
-### 4. Configure Environment Variables
-
-Create a `.env` file and add your SMTP credentials (as shown above).
-
-### 5. Run FastAPI Server
-
-```bash id="b7s1qk"
-uvicorn main:app --reload
-```
-
-### 6. Start Stripe Webhook Listener
-
-```bash id="e4x8zn"
-stripe listen --forward-to localhost:8000/webhooks/stripe
-```
-
-### 7. Test the System
-
-* Perform a successful payment → success email should be sent
-* Use Stripe test card for failure → failure email should be sent
-* Cancel subscription → cancellation email should be sent
+* Interactive API documentation: `http://127.0.0.1:8000/docs`
+* Alternative ReDoc documentation: `http://127.0.0.1:8000/redoc`
 
 ---
 
-## Workflow
+## API Endpoints Overview
 
-### Payment Success
+**Authentication**
 
-When a user completes a payment, Stripe sends a `checkout.session.completed` event. The backend processes the subscription and sends a success email to the user.
+* `POST /auth/register` – Create a new user
+* `POST /auth/login` – Login and retrieve JWT token
+* `GET /auth/me` – Get current user information (protected)
 
-### Payment Failure
+**Users**
 
-If a payment fails, Stripe sends a `payment_intent.payment_failed` event. The system extracts the user’s email and sends a failure notification.
+* `GET /users/` – List all users (admin only)
+* `GET /users/{id}` – Get user details
+* `PATCH /users/{id}` – Update user info
+* `DELETE /users/{id}` – Delete user
 
-### Subscription Cancellation
+**Projects**
 
-When a user cancels an active subscription, the system updates the database and sends a cancellation confirmation email.
+* `POST /projects/` – Create project
+* `GET /projects/` – List projects
+* `GET /projects/{id}` – Retrieve a single project
+* `PATCH /projects/{id}` – Update project
+* `DELETE /projects/{id}` – Delete project
 
----
+**Payments**
 
-## Asynchronous Processing
+* `POST /subscription/create` – Create subscription
+* `POST /subscription/cancel` – Cancel subscription
+* `POST /webhook` – Stripe webhook for payment events
 
-Email notifications are sent using FastAPI BackgroundTasks. This ensures that email sending does not delay API responses or webhook handling.
+**Email Verification**
+
+* `POST /email/verify` – Verify user email
+* `POST /email/resend` – Resend verification email
 
 ---
 
 ## Notes
 
-* Email delivery is non-blocking and does not affect core application logic
-* The system relies on Stripe webhooks for accurate payment status updates
+* Make sure to **run migrations** before starting the application.
+* Ensure your SMTP settings are correct to send email notifications.
+* Use Stripe **sandbox keys** for testing payments to avoid real transactions.
+* RBAC and permissions must be seeded before creating users with specific roles.
 
 ---
+
+This README gives a **complete guide to setup, run, and explore** the Project Management API. It reflects all features merged from your branches: FastAPI fundamentals, JWT auth, RBAC, payment module, and email notifications.
+
