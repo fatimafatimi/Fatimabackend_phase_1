@@ -1,5 +1,3 @@
-# handler/project_handler.py
-
 from models.project import Project
 from models.user import User
 from sqlalchemy.orm import Session
@@ -24,7 +22,6 @@ def update_project(db: Session, project_id: int, project_data, current_user: Use
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    
     if current_user.role != "admin" and project.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

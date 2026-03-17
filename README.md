@@ -1,166 +1,56 @@
-# Mini PMS — Role-Based Access Control (RBAC) with Permissions
+# Payment Module (FastAPI + Stripe)
 
-## Overview
-
-This project extends the **Mini Project Management System (PMS)** with a **robust Role-Based Access Control (RBAC) system** using permissions. It allows fine-grained control over what actions each user can perform based on their role and assigned permissions.
-
-Key features:
-
-* Create and manage **Roles**.
-* Create and manage **Permissions**.
-* Assign multiple **Permissions** to a Role.
-* Enforce access control using **permission checks** in API endpoints.
-* JWT-based authentication integrated with RBAC.
-* PostgreSQL database with SQLAlchemy ORM for reliable data integrity.
+A complete **Payment Module** implementation using **FastAPI** with **Stripe integration**.  
+This module supports user subscriptions, payment processing, and secure token-based authorization.
 
 ---
 
 ## Features
 
-### Roles
+- **User Authentication & Authorization**
+  - Login and register users
+  - JWT-based token authentication
+  - Role-based access (Admin vs User)
+  
+- **Stripe Payment Integration**
+  - One-time payments
+  - Subscription payments
+  - Webhook support for payment events
+  - Sandbox (test) and live modes
 
-* Roles represent a group of users with common access rights.
-* Roles can have multiple permissions assigned.
-* Examples: `admin`, `manager`, `user`.
-
-### Permissions
-
-* Permissions define specific actions a user can perform.
-* Examples: `create_project`, `update_project`, `delete_project`, `view_all_projects`.
-* Permissions are assigned to roles, not individual users directly.
-
-### RBAC Enforcement
-
-* Endpoints are protected using a **`require_permission`** dependency.
-* Example: Only users with `manage_roles` permission can create or assign roles.
-* JWT tokens carry user role information.
+- **Secure & Scalable**
+  - Passwords hashed with industry-standard algorithms
+  - Sensitive data secured via environment variables
+  - Easily extendable for future payment gateways
 
 ---
 
-## Database Structure
+## Tech Stack
 
-### Tables
-
-* **users** – Stores user information, including assigned role.
-* **roles** – Stores role names.
-* **permissions** – Stores permission names.
-* **role_permission** – Association table linking roles and permissions (many-to-many).
-
-### Relationships
-
-```
-User --(many-to-one)--> Role --(many-to-many)--> Permission
-```
-
-* A **User** belongs to one Role.
-* A **Role** can have multiple Permissions.
-* A **Permission** can be assigned to multiple Roles.
+- **Backend:** FastAPI, Python 3.11+
+- **Database:** PostgreSQL / SQLite
+- **ORM:** SQLAlchemy
+- **Payment Gateway:** Stripe
+- **Authentication:** JWT (JSON Web Tokens)
+- **Dependencies:** `stripe`, `python-dotenv`, `pydantic`, `fastapi`, `uvicorn`
 
 ---
 
-## API Endpoints
-
-### Role Endpoints
-
-| Method | Endpoint                       | Description                       | Permission Required |
-| ------ | ------------------------------ | --------------------------------- | ------------------- |
-| POST   | `/roles/`                      | Create a new role                 | `manage_roles`      |
-| GET    | `/roles/{role_id}`             | Get role details with permissions | `manage_roles`      |
-| POST   | `/roles/{role_id}/permissions` | Assign permissions to a role      | `manage_roles`      |
-| GET    | `/roles/`                      | List all roles with permissions   | `manage_roles`      |
-
-### Permission Endpoints
-
-| Method | Endpoint        | Description             | Permission Required  |
-| ------ | --------------- | ----------------------- | -------------------- |
-| POST   | `/permissions/` | Create a new permission | `manage_permissions` |
-| GET    | `/permissions/` | List all permissions    | `manage_permissions` |
-
----
-
-## Example Usage (Swagger / Postman)
-
-### 1. Create a Role
-
-```json
-POST /roles/
-{
-    "name": "manager"
-}
-```
-
-### 2. Create a Permission
-
-```json
-POST /permissions/
-{
-    "name": "create_project"
-}
-```
-
-### 3. Assign Permissions to a Role
-
-```json
-POST /roles/1/permissions
-{
-    "permission_names": ["create_project", "update_project", "view_all_projects"]
-}
-```
-
-### 4. Get Role with Permissions
-
-```json
-GET /roles/1
-```
-
-**Response:**
-
-```json
-{
-    "id": 1,
-    "name": "manager",
-    "permissions": ["create_project", "update_project", "view_all_projects"]
-}
-```
-
----
-
-## Technologies Used
-
-* **FastAPI** – Modern Python web framework.
-* **SQLAlchemy** – ORM for database interactions.
-* **PostgreSQL** – Relational database with strong data integrity.
-* **Pydantic** – Data validation and serialization.
-* **JWT** – JSON Web Tokens for authentication.
-* **Swagger UI** – Automatic API documentation and testing.
-
----
-
-## How It Works
-
-1. **Users** are assigned a **Role**.
-2. **Roles** have one or more **Permissions**.
-3. API endpoints check user permissions using the `require_permission` dependency.
-4. Unauthorized access attempts return a `403 Forbidden` error.
-5. Admins can manage roles and permissions dynamically without changing code.
-
----
-
-## Setup Instructions
+## Installation
 
 1. Clone the repository:
 
 ```bash
-git clone <repo-url>
-cd Mini-PMS
-```
+git clone https://github.com/fatimafatimi/payment_module.git
+cd payment-module
+````
 
-2. Create and activate a virtual environment:
+2. Create a virtual environment:
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
+source .venv/bin/activate   # Linux/Mac
+.venv\Scripts\activate      # Windows
 ```
 
 3. Install dependencies:
@@ -169,15 +59,24 @@ source .venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 ```
 
-4. Configure the PostgreSQL database in `database.py`.
+4. Set up environment variables:
 
-5. Run migrations (Alembic recommended):
+Create a `.env` file:
 
-```bash
-alembic upgrade head
+```env
+DATABASE_URL=sqlite:///./test.db      # or your PostgreSQL URL
+STRIPE_API_KEY=sk_test_yourkey
+STRIPE_WEBHOOK_SECRET=whsec_yoursecret
+SECRET_KEY=your_jwt_secret
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
-6. Start the server:
+---
+
+## Usage
+
+### Run the server
 
 ```bash
 uvicorn main:app --reload
@@ -187,6 +86,104 @@ uvicorn main:app --reload
 
 ```
 http://127.0.0.1:8000/docs
+Your API will be available at `http://127.0.0.1:8000/docs`.
+
+---
+
+## Endpoints
+
+### **Authentication**
+
+| Method | Endpoint          | Description                     | Access    |
+| ------ | ----------------- | ------------------------------- | --------- |
+| POST   | `/users/login`    | Login user and get JWT token    | Public    |
+| POST   | `/users/register` | Admin-only: create a new user   | Admin     |
+| GET    | `/users/me`       | Get current logged-in user info | Protected |
+
+---
+
+### **Plan Management**
+
+| Method | Endpoint      | Description             | Access             |
+| ------ | ------------- | ----------------------- | ------------------ |
+| GET    | `/plans/`     | Get all available plans | Public / Protected |
+| GET    | `/plans/{id}` | Get plan details by ID  | Public / Protected |
+| POST   | `/plans/`     | Create a new plan       | Admin              |
+| PUT    | `/plans/{id}` | Update an existing plan | Admin              |
+| DELETE | `/plans/{id}` | Delete a plan           | Admin              |
+
+---
+
+### **Subscription**
+
+| Method | Endpoint               | Description                                              | Access    |
+| ------ | ---------------------- | -------------------------------------------------------- | --------- |
+| GET    | `/subscription/me`     | Get current user’s active or last subscription           | Protected |
+| GET    | `/subscription/status` | Get status of current subscription                       | Protected |
+| POST   | `/subscription/cancel` | Cancel active subscription (Stripe + DB)                 | Protected |
+| POST   | `/subscription/create` | (Optional) Create a new subscription via Stripe Checkout | Protected |
+
+---
+
+### **Payments**
+
+| Method | Endpoint                            | Description                                 | Access    |
+| ------ | ----------------------------------- | ------------------------------------------- | --------- |
+| POST   | `/payments/create-checkout-session` | Create a Stripe Checkout session for a plan | Protected |
+| GET    | `/payments/my-payments`             | Get logged-in user's payment history        | Protected |
+| GET    | `/payments/`                        | Get all payments (Admin view)               | Admin     |
+
+---
+
+### **Webhook**
+
+| Method | Endpoint           | Description                                        | Access                |
+| ------ | ------------------ | -------------------------------------------------- | --------------------- |
+| POST   | `/webhooks/stripe` | Stripe webhook for subscription and payment events | Stripe only (no auth) |
+
+---
+
+### **Premium / Feature Access**
+
+| Method | Endpoint           | Description                        | Access                      |
+| ------ | ------------------ | ---------------------------------- | --------------------------- |
+| GET    | `/premium/content` | Access premium content or features | Protected / Paid users only |
+
+
+---
+
+### Testing Stripe (Sandbox Mode)
+
+1. Use **Stripe test API keys** from [Stripe Dashboard](https://dashboard.stripe.com/test/apikeys)
+2. Use **Stripe CLI** to test webhooks:
+
+```bash
+stripe listen --forward-to http://127.0.0.1:8000/webhook
+```
+
+3. Trigger test events:
+
+```bash
+stripe trigger payment_intent.succeeded
+```
+
+> All test payments can be made with Stripe test cards, e.g. `4242 4242 4242 4242`.
+
+---
+
+## Folder Structure
+
+```
+payment-module/
+│
+├─ main.py                 # FastAPI app entry
+├─ database.py             # Database connection & session
+├─ models/                 # SQLAlchemy models (User, Subscription)
+├─ schemas/                # Pydantic schemas
+├─ dependencies/           # JWT auth and dependencies
+├─ handler/                # Business logic (login, payments)
+├─ utils/                  # Stripe service & helpers
+└─ tests/                  # Unit and integration tests
 ```
 
 ---
@@ -200,3 +197,10 @@ http://127.0.0.1:8000/docs
 
 ---
 
+## Security
+
+* JWT tokens are required for all protected endpoints
+* Admin-only routes require elevated privileges
+* Stripe webhook events are verified using the `STRIPE_WEBHOOK_SECRET`
+
+---

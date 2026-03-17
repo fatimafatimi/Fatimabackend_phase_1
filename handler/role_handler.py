@@ -20,7 +20,6 @@ def create_role(db: Session, name: str) -> Role:
     return new_role
 
 
-
 def get_role_with_permissions(db: Session, role_id: int) -> dict:
     role = db.query(Role).filter(Role.id == role_id).first()
     if not role:
@@ -31,7 +30,6 @@ def get_role_with_permissions(db: Session, role_id: int) -> dict:
         "name": role.name,
         "permissions": [perm.name for perm in role.permissions]
     }
-
 
 
 def list_roles(db: Session) -> List[dict]:
@@ -46,7 +44,6 @@ def list_roles(db: Session) -> List[dict]:
     return result
 
 
-
 def assign_permissions_to_role(db: Session, role_id: int, permission_names: List[str]) -> Role:
     role = db.query(Role).filter(Role.id == role_id).first()
     if not role:
@@ -56,7 +53,7 @@ def assign_permissions_to_role(db: Session, role_id: int, permission_names: List
     if not permissions:
         raise Exception("No valid permissions found for the given names")
 
-    # assign permissions
+
     role.permissions = permissions
     db.commit()
     db.refresh(role)
