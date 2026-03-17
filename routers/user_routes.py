@@ -5,6 +5,7 @@ from schemas.user_schema import UserLogin, UserResponse, UserRegister
 from handler.user_handler import create_user, login_user
 from dependencies.auth import require_admin, get_user
 from models.user import User
+from dependencies.auth import get_current_user
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
 

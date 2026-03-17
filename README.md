@@ -1,236 +1,202 @@
-# Mini Project Management System (Branch: RBAC Implementation)
+# Mini PMS — Role-Based Access Control (RBAC) with Permissions
 
-This branch implements authentication and role-based access control (RBAC) using FastAPI, JWT, and SQLAlchemy.
+## Overview
 
----
+This project extends the **Mini Project Management System (PMS)** with a **robust Role-Based Access Control (RBAC) system** using permissions. It allows fine-grained control over what actions each user can perform based on their role and assigned permissions.
 
-## 🚀 Features Implemented
+Key features:
 
-* User authentication with JWT
-* Password hashing using bcrypt
-* Role-based access control (Admin & Owner-based permissions)
-* Project-task relationship management
-* Protected routes using dependencies
-* Proper HTTP status handling (401, 403, 404)
-
----
-
-## 🛠 Tech Stack
-
-* FastAPI
-* SQLAlchemy ORM
-* JWT Authentication
-* OAuth2PasswordBearer
-* Passlib (bcrypt)
-* SQLite / Configured Database
+* Create and manage **Roles**.
+* Create and manage **Permissions**.
+* Assign multiple **Permissions** to a Role.
+* Enforce access control using **permission checks** in API endpoints.
+* JWT-based authentication integrated with RBAC.
+* PostgreSQL database with SQLAlchemy ORM for reliable data integrity.
 
 ---
 
-## 🔐 Authentication System
+## Features
 
-Authentication is handled using JWT tokens.
+### Roles
 
-### Login Flow
+* Roles represent a group of users with common access rights.
+* Roles can have multiple permissions assigned.
+* Examples: `admin`, `manager`, `user`.
 
-1. User logs in using email and password.
-2. Password is verified using `verify_password`.
-3. If valid, a JWT token is generated containing:
+### Permissions
+
+* Permissions define specific actions a user can perform.
+* Examples: `create_project`, `update_project`, `delete_project`, `view_all_projects`.
+* Permissions are assigned to roles, not individual users directly.
+
+### RBAC Enforcement
+
+* Endpoints are protected using a **`require_permission`** dependency.
+* Example: Only users with `manage_roles` permission can create or assign roles.
+* JWT tokens carry user role information.
+
+---
+
+## Database Structure
+
+### Tables
+
+* **users** – Stores user information, including assigned role.
+* **roles** – Stores role names.
+* **permissions** – Stores permission names.
+* **role_permission** – Association table linking roles and permissions (many-to-many).
+
+### Relationships
+
+```
+User --(many-to-one)--> Role --(many-to-many)--> Permission
+```
+
+* A **User** belongs to one Role.
+* A **Role** can have multiple Permissions.
+* A **Permission** can be assigned to multiple Roles.
+
+---
+
+## API Endpoints
+
+### Role Endpoints
+
+| Method | Endpoint                       | Description                       | Permission Required |
+| ------ | ------------------------------ | --------------------------------- | ------------------- |
+| POST   | `/roles/`                      | Create a new role                 | `manage_roles`      |
+| GET    | `/roles/{role_id}`             | Get role details with permissions | `manage_roles`      |
+| POST   | `/roles/{role_id}/permissions` | Assign permissions to a role      | `manage_roles`      |
+| GET    | `/roles/`                      | List all roles with permissions   | `manage_roles`      |
+
+### Permission Endpoints
+
+| Method | Endpoint        | Description             | Permission Required  |
+| ------ | --------------- | ----------------------- | -------------------- |
+| POST   | `/permissions/` | Create a new permission | `manage_permissions` |
+| GET    | `/permissions/` | List all permissions    | `manage_permissions` |
+
+---
+
+## Example Usage (Swagger / Postman)
+
+### 1. Create a Role
 
 ```json
+POST /roles/
 {
-  "sub": "user_email",
-  "role": "user_role"
+    "name": "manager"
 }
 ```
 
-4. Token is returned as:
+### 2. Create a Permission
 
 ```json
+POST /permissions/
 {
-  "access_token": "JWT_TOKEN",
-  "token_type": "bearer"
+    "name": "create_project"
 }
 ```
 
----
+### 3. Assign Permissions to a Role
 
-## Password Security
-
-Passwords are securely hashed using:
-
-* bcrypt via Passlib
-
-Functions used:
-
-* `hash_password(password)`
-* `verify_password(plain_password, hashed_password)`
-
----
-
-## 👤 User Management
-
-### Create User
-
-* Only users with **admin role** can create new users.
-* Implemented using `require_admin` dependency.
-* Prevents duplicate email registration.
-
-If email already exists:
-
-* Returns `400 Bad Request`
-
----
-
-## 📂 Task Management Authorization
-
-Authorization is enforced inside handler logic using:
-
-* Role checking
-* Project ownership validation
-
----
-
-### Create Task
-
-Allowed if:
-
-* User role is `"admin"`
-  OR
-* User is the owner of the project
-
-Otherwise:
-
-* Returns `403 Forbidden`
-
----
-
-### Get Tasks by Project
-
-Allowed if:
-
-* User role is `"admin"`
-  OR
-* User owns the project
-
----
-
-### Update Task
-
-Allowed if:
-
-* User role is `"admin"`
-  OR
-* User owns the associated project
-
-Partial updates supported using:
-
-```python
-task.dict(exclude_unset=True)
+```json
+POST /roles/1/permissions
+{
+    "permission_names": ["create_project", "update_project", "view_all_projects"]
+}
 ```
 
----
+### 4. Get Role with Permissions
 
-### Delete Task
+```json
+GET /roles/1
+```
 
-Allowed if:
-
-* User role is `"admin"`
-  OR
-* User owns the associated project
-
-Returns:
+**Response:**
 
 ```json
 {
-  "message": "Task deleted"
+    "id": 1,
+    "name": "manager",
+    "permissions": ["create_project", "update_project", "view_all_projects"]
 }
 ```
 
 ---
 
-## 🔐 Authorization Logic Pattern
+## Technologies Used
 
-This branch implements:
-
-### 1️⃣ Role-Based Check
-
-```python
-if current_user.role != "admin":
-```
-
-### 2️⃣ Ownership Check
-
-```python
-project.owner_id == current_user.id
-```
-
-This ensures:
-
-* Admin has full access.
-* Non-admin users can only manage their own project resources.
+* **FastAPI** – Modern Python web framework.
+* **SQLAlchemy** – ORM for database interactions.
+* **PostgreSQL** – Relational database with strong data integrity.
+* **Pydantic** – Data validation and serialization.
+* **JWT** – JSON Web Tokens for authentication.
+* **Swagger UI** – Automatic API documentation and testing.
 
 ---
 
-## 🧱 Security Architecture
+## How It Works
 
-Authentication:
-
-* OAuth2PasswordBearer
-* JWT token decoding
-* get_current_user dependency
-
-Authorization:
-
-* Admin-only access for user creation
-* Project ownership validation for task actions
-* HTTP 403 for unauthorized access
-* HTTP 401 for invalid tokens
-* HTTP 404 for missing resources
+1. **Users** are assigned a **Role**.
+2. **Roles** have one or more **Permissions**.
+3. API endpoints check user permissions using the `require_permission` dependency.
+4. Unauthorized access attempts return a `403 Forbidden` error.
+5. Admins can manage roles and permissions dynamically without changing code.
 
 ---
 
-## 📁 Project Structure (Relevant Parts)
+## Setup Instructions
 
-```
-models/
-    user.py
-    project.py
-    task.py
+1. Clone the repository:
 
-handlers/
-    user_handler.py
-    task_handler.py
-
-dependencies/
-    auth.py
-
-utils/
-    jwt_handler.py
-    security.py
+```bash
+git clone <repo-url>
+cd Mini-PMS
 ```
 
+2. Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+source .venv/bin/activate  # Linux/Mac
+```
+
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Configure the PostgreSQL database in `database.py`.
+
+5. Run migrations (Alembic recommended):
+
+```bash
+alembic upgrade head
+```
+
+6. Start the server:
+
+```bash
+uvicorn main:app --reload
+```
+
+7. Access Swagger UI at:
+
+```
+http://127.0.0.1:8000/docs
+```
+
 ---
 
-## ✅ What This Branch Demonstrates
+## Benefits of This RBAC System
 
-* Secure JWT authentication
-* Role-based access control (RBAC)
-* Ownership-based authorization
-* Clean dependency injection in FastAPI
-* Proper separation of concerns (models, handlers, dependencies, utils)
+* **Flexible access control** – Assign permissions at the role level.
+* **Secure** – Users can only access actions allowed by their role.
+* **Scalable** – Easily add new roles and permissions without changing code.
+* **Traceable** – Easy to see which role has what permissions.
 
 ---
 
-## 📌 Notes
-
-This branch focuses on:
-
-* Authentication
-* Admin-restricted user creation
-* Task-level authorization
-* Project ownership enforcement
-
-Permission-based dynamic RBAC is not implemented in this branch.
-
-
- 

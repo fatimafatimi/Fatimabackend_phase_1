@@ -50,9 +50,9 @@ def update_task_route(
     task_id: int,
     task: TaskUpdate,
     db: Session = Depends(get_db),
-    task_obj = Depends(require_task_owner)
+    current_user: User = Depends(get_current_user)
 ):
-    return update_task(db, task_id, task, task_obj.owner)
+    return update_task(db, task_id, task, current_user)
 
 
 
@@ -65,6 +65,6 @@ def update_task_route(
 def delete_task_route(
     task_id: int,
     db: Session = Depends(get_db),
-    task_obj = Depends(require_task_owner)
+    current_user: User = Depends(get_current_user)
 ):
-    return delete_task(db, task_id, task_obj.owner)
+    return delete_task(db, task_id, current_user)

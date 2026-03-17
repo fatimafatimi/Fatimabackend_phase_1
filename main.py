@@ -3,14 +3,18 @@ from database import engine, Base
 from routers.user_routes import user_router
 from routers.project_routes import project_router
 from routers.task_routes import task_router
+from routers import role_routes, permission_routes
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-app.include_router(user_router, prefix="/users", tags=["Users"])
-app.include_router(project_router, prefix="/projects", tags=["Projects"])
-app.include_router(task_router, prefix="/tasks", tags=["Tasks"])
+app.include_router(user_router)
+app.include_router(project_router)
+app.include_router(task_router)
+app.include_router(role_routes.role_router)
+app.include_router(permission_routes.permission_router)
+
 
 @app.get("/")
 def welcome():
