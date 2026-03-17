@@ -1,0 +1,2 @@
+APP_NAME = "Task API"
+VERSION = "1.0.0"
