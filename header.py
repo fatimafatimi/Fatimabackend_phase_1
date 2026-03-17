@@ -53,7 +53,7 @@ async def headers_model(
     headers = HeaderModel(user_agent=user_agent, x_token=x_token)
     return {"headers": headers}
 
-
+ 
 
 # 5. Disable Automatic Underscore Conversion
 @app.get("/disable-underscore/")
