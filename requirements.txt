@@ -3,4 +3,7 @@ pydantic==2.12.5
 fastapi
 uvicorn==0.40.0
 sqlalchemy
+pydantic
 python-dotenv
+python-jose[cryptography]
+passlib[bcrypt]
