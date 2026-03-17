@@ -98,7 +98,7 @@ project-management-api/
 1. **Clone the repository**
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/fatimafatimi/Fatimabackend_phase_1
 cd project-management-api
 ```
 
