@@ -29,10 +29,3 @@ app.include_router(premium_router, prefix="/premium", tags=["Premium"])
 def welcome():
     return {"message": "Mini Project Management System"}
 
-
-@app.get("/payment-success")
-def payment_success(session_id: str | None = None):
-    return {
-        "message": "Payment completed successfully",
-    }
-

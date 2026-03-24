@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
+from sqlalchemy import Boolean
+
 
 class User(Base):
     __tablename__ = "users"
@@ -17,5 +19,7 @@ class User(Base):
     
     subscriptions = relationship("Subscription", back_populates="user")
     payments = relationship("Payment", back_populates="user")
+  
+    is_email_verified = Column(Boolean, default=False)
     
     

@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
-from models.role import Role, Permission
+# from models.role import Role, Permission
 from models.user import User
 
 # revision identifiers, used by Alembic.

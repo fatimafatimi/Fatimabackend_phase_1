@@ -13,11 +13,14 @@ env = Environment(
     autoescape=select_autoescape(['html', 'xml'])
 )
 
-def send_email(to_email: str, subject: str, body: str):
+def send_email(to: str, subject: str, template_name: str, context: dict):
     try:
+        template = env.get_template(template_name)
+        body = template.render(**context)
+
         message = MIMEMultipart()
         message["From"] = EMAIL_FROM
-        message["To"] = to_email
+        message["To"] = to
         message["Subject"] = subject
 
         message.attach(MIMEText(body, "html"))
@@ -25,28 +28,37 @@ def send_email(to_email: str, subject: str, body: str):
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(EMAIL_FROM, to_email, message.as_string())
+            server.sendmail(EMAIL_FROM, to, message.as_string())
 
-        print(f"Email sent successfully to {to_email}")
+        print(f"Email sent successfully to {to}")
 
     except Exception as e:
         print(f"Error sending email: {str(e)}")
 
 
-def send_payment_success_email(user_email: str, plan_name: str, amount: str):
-    template = env.get_template("payment_success.html")
-    body = template.render(plan_name=plan_name, amount=amount)
 
-    subject = "Payment Successful - Mini PMS"
-    send_email(user_email, subject, body)
-    
-    
+def send_payment_success_email(user_email: str, plan_name: str, amount: str):
+    send_email(
+        to=user_email,
+        subject="Payment Successful - Mini PMS",
+        template_name="payment_success.html",
+        context={"plan_name": plan_name, "amount": amount}
+    )
+
+
 def send_payment_failed_email(user_email: str):
-    template = env.get_template("payment_failed.html")
-    body = template.render()
-    send_email(user_email, "Payment Failed - Mini PMS", body)
+    send_email(
+        to=user_email,
+        subject="Payment Failed - Mini PMS",
+        template_name="payment_failed.html",
+        context={}
+    )
+
 
 def send_subscription_cancelled_email(user_email: str):
-    template = env.get_template("subscription_cancelled.html")
-    body = template.render()
-    send_email(user_email, "Subscription Cancelled - Mini PMS", body)
+    send_email(
+        to=user_email,
+        subject="Subscription Cancelled - Mini PMS",
+        template_name="subscription_cancelled.html",
+        context={}
+    )
