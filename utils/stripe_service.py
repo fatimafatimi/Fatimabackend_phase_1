@@ -5,7 +5,6 @@ from fastapi import HTTPException
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_API_KEY
 
-
 # Create Stripe Checkout Session (Subscription)
 def create_checkout_session(customer_email: str, price_id: str, plan_id: int):
     try:

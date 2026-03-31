@@ -1,4 +1,4 @@
-# handler/user_handler.py
+# # handler/user_handler.py
 from models.user import User
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -7,38 +7,19 @@ from utils.jwt_handler import create_access_token
 from models.role import Role
 from models.permission import Permission
 from models.tenant import Tenant
+from utils.email_service import send_user_welcome_email, send_tenant_admin_welcome_email
 
-# ─── Permission definitions ───
-
-# Permissions given to the "admin" role in every tenant
 ADMIN_PERMISSIONS = [
-    "create_project",
-    "update_project",
-    "view_all_projects",
-    "view_project",
-    "delete_project",
-    "create_task",
-    "view_tasks",
-    "update_task",
-    "delete_task",
-    "manage_roles",
-    "view_roles",
-    "manage_permissions",
+    "create_project", "update_project", "view_all_projects", "view_project",
+    "delete_project", "create_task", "view_tasks", "update_task", "delete_task",
+    "manage_roles", "view_roles", "manage_permissions",
 ]
 
-# Permissions given to the "user" role in every tenant
 USER_PERMISSIONS = [
-    "create_project",
-    "update_project",
-    "view_project",
-    "delete_project",
-    "create_task",
-    "view_tasks",
-    "update_task",
-    "delete_task",
+    "create_project", "update_project", "view_project", "delete_project",
+    "create_task", "view_tasks", "update_task", "delete_task",
 ]
 
-# ─── Seed helper ───
 
 def seed_tenant_roles_and_permissions(db: Session, tenant_id: int):
     all_permission_names = set(ADMIN_PERMISSIONS + USER_PERMISSIONS)
@@ -67,14 +48,11 @@ def seed_tenant_roles_and_permissions(db: Session, tenant_id: int):
     return admin_role, user_role
 
 
-# ─── Handlers ─────
-
 def create_user(db: Session, user, current_user: User = None):
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Determine tenant: caller's tenant if logged in, else default tenant
     if current_user:
         tenant_id = current_user.tenant_id
     else:
@@ -83,13 +61,11 @@ def create_user(db: Session, user, current_user: User = None):
             raise HTTPException(status_code=500, detail="Default tenant not found")
         tenant_id = default_tenant.id
 
-    # Find the "user" role for this tenant
     role = db.query(Role).filter(
         Role.name == "user",
         Role.tenant_id == tenant_id
     ).first()
 
-    # Safety: if somehow the role doesn't exist, create it with permissions
     if not role:
         _, role = seed_tenant_roles_and_permissions(db, tenant_id)
         db.commit()
@@ -107,6 +83,16 @@ def create_user(db: Session, user, current_user: User = None):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # send welcome email — tells user to complete payment to activate account
+    try:
+        send_user_welcome_email(
+            user_email=new_user.email,
+            username=new_user.username
+        )
+    except Exception as e:
+        print(f"Welcome email failed for {new_user.email}: {e}")
+
     return new_user
 
 
@@ -145,17 +131,14 @@ def create_tenant_admin(db: Session, user, current_user: User):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Create the tenant
     new_tenant = Tenant(name=user.company_name)
     db.add(new_tenant)
     db.flush()
 
-    # Seed roles + permissions for this tenant
     admin_role, _ = seed_tenant_roles_and_permissions(db, new_tenant.id)
     db.commit()
     db.refresh(admin_role)
 
-    # Create the tenant admin user
     new_admin = User(
         username=user.username,
         email=user.email,
@@ -168,4 +151,15 @@ def create_tenant_admin(db: Session, user, current_user: User):
     db.add(new_admin)
     db.commit()
     db.refresh(new_admin)
+
+    # send welcome email to tenant admin
+    try:
+        send_tenant_admin_welcome_email(
+            admin_email=new_admin.email,
+            username=new_admin.username,
+            company_name=user.company_name
+        )
+    except Exception as e:
+        print(f"Tenant admin welcome email failed for {new_admin.email}: {e}")
+
     return new_admin
