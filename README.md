@@ -213,6 +213,3 @@ The API will be available at `http://127.0.0.1:8000`.
 * RBAC and permissions must be seeded before creating users with specific roles.
 
 ---
-
-This README gives a **complete guide to setup, run, and explore** the Project Management API. It reflects all features merged from your branches: FastAPI fundamentals, JWT auth, RBAC, payment module, and email notifications.
-
