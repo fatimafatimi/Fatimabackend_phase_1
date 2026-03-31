@@ -1,218 +1,256 @@
-# Project Management API
+# Mini PMS — Multi-Tenant Project Management API
 
-## Overview
-
-This is a fully-featured **Project Management API** built with **FastAPI**. The project demonstrates a complete, production-ready backend system implementing modern API development concepts including authentication, role-based access control, database migrations, email notifications, and payment processing.
-
-This repository is the **final merged version** incorporating all individual branches and features:
-
-* **FastAPI Day 2, Day 3, Day 4** – Fundamental FastAPI concepts and REST API design.
-* **JWT Auth** – User authentication with JWT tokens.
-* **Handler Config** – Structured request handling and separation of concerns.
-* **Alembic** – Database migrations management.
-* **Rollbase** – Base models and reusable project structures.
-* **RBAC with Permissions** – Role-based access control with permission management.
-* **FastAPI Concepts** – Advanced FastAPI features and dependency injection.
-* **Payment Module** – Subscription and payment integration (Stripe).
-* **Email Notification** – Email notifications and email verification workflow.
+A multi-tenant REST API built with FastAPI and PostgreSQL for managing projects, tasks, roles, and permissions across isolated tenants. Supports a three-tier user hierarchy: Super Admin, Tenant Admin, and regular Users. Authentication is handled via JWT tokens with OTP-based email verification and a full forgot password flow.
 
 ---
 
-## Features
+## Tech Stack
 
-* **User Management**
-
-  * User registration and login
-  * JWT-based authentication
-  * Role-based access control (Admin / User)
-  * Email verification system
-
-* **Project Management**
-
-  * Create, read, update, delete (CRUD) projects
-  * Assign users to projects based on permissions
-  * Pagination and filtering support
-
-* **Payments**
-
-  * Subscription creation and cancellation
-  * Stripe sandbox integration
-  * Payment notification emails
-
-* **Notifications**
-
-  * Email notifications for important events
-  * Verification emails for new users
-
-* **Database & Migrations**
-
-  * SQLAlchemy ORM
-  * Alembic migrations for database schema management
+- **Python** 3.13
+- **FastAPI** — web framework
+- **PostgreSQL** — relational database
+- **SQLAlchemy** — ORM
+- **Alembic** — database migrations
+- **Pydantic v2** — data validation
+- **JWT (python-jose)** — authentication tokens
+- **Passlib + bcrypt** — password hashing
+- **dnspython** — real-world email existence verification
+- **uv** — package manager
 
 ---
 
-## Folder Structure
+## Architecture Overview
 
 ```
-project-management-api/
-│
-├── app/
-│   ├── main.py                  # FastAPI application entry point
-│   ├── config.py                # Configuration and environment settings
-│   ├── database.py              # Database connection and session management
-│   ├── models/                  # SQLAlchemy models
-│   │   ├── user.py
-│   │   ├── project.py
-│   │   └── role_permission.py
-│   ├── schemas/                 # Pydantic request/response schemas
-│   ├── handlers/                # Business logic handlers
-│   ├── routers/                 # API routes grouped by functionality
-│   │   ├── auth.py
-│   │   ├── users.py
-│   │   ├── projects.py
-│   │   ├── payments.py
-│   │   └── webhooks.py
-│   ├── dependencies/            # Dependency injection and permissions
-│   ├── services/                # External services (Stripe, Email)
-│   └── utils/                   # Utility functions
-│
-├── migrations/                  # Alembic migrations
-├── requirements.txt             # Python dependencies
-├── README.md
-└── .env.example                 # Example environment variables
+┌─────────────────────────────────────────────┐
+│                  Super Admin                │
+│         (global access, all tenants)        │
+└──────────────────┬──────────────────────────┘
+                   │ registers
+     ┌─────────────▼─────────────┐
+     │       Tenant Admin        │
+     │  (scoped to own tenant)   │
+     └─────────────┬─────────────┘
+                   │ creates
+          ┌────────▼────────┐
+          │   Tenant User   │
+          │ (own resources) │
+          └─────────────────┘
+```
+
+Each tenant is fully isolated. A Tenant Admin and their users cannot see or modify data belonging to another tenant.
+
+---
+
+## User Roles
+
+### Super Admin
+- Single global administrator, not scoped to any tenant
+- Can register new Tenant Admins (which also creates a new tenant automatically)
+- Has unrestricted access to all projects, tasks, roles, and permissions across all tenants
+- Bypasses all permission checks globally
+
+### Tenant Admin
+- Scoped entirely to their own tenant
+- Has full admin capabilities within their tenant — projects, tasks, roles, permissions
+- Can create users within their tenant
+- Cannot access or modify another tenant's data
+
+### User (Normal / Tenant)
+- Can create, update, view, and delete their own projects
+- Can create, update, view, and delete tasks within their own projects
+- Cannot access roles or permissions
+- Cannot access another tenant's data (if a tenant user)
+
+---
+
+## Project Structure
+
+```
+Mini PMS/
+├── main.py
+├── database.py
+├── config/
+│   └── config.py
+├── models/
+│   ├── user.py
+│   ├── tenant.py
+│   ├── project.py
+│   ├── task.py
+│   ├── role.py
+│   └── permission.py
+├── schemas/
+│   ├── user_schema.py
+│   ├── project_schema.py
+│   ├── task_schema.py
+│   ├── role.py
+│   └── permission.py
+├── routers/
+│   ├── auth_router.py
+│   ├── user_routes.py
+│   ├── project_router.py
+│   ├── task_router.py
+│   ├── role_router.py
+│   └── permission_router.py
+├── handler/
+│   ├── user_handler.py
+│   ├── project_handler.py
+│   ├── task_handler.py
+│   ├── role_handler.py
+│   └── permission_handler.py
+├── dependencies/
+│   ├── auth.py
+│   └── permissions.py
+├── utils/
+│   ├── security.py
+│   ├── jwt_handler.py
+│   ├── otp_utils.py
+│   └── email_service.py
+├── alembic/
+│   ├── env.py
+│   └── versions/
+├── alembic.ini
+└── scripts/
+    └── migrate_existing_users.py
 ```
 
 ---
 
-## Requirements
+## Getting Started
 
-* Python 3.11+
-* PostgreSQL database
-* Stripe Sandbox account for payment testing
-* SMTP-enabled email account for notifications
-
----
-
-## Installation and Setup
-
-1. **Clone the repository**
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/fatimafatimi/Fatimabackend_phase_1
-cd project-management-api
+cd "Mini PMS"
 ```
 
-2. **Create a virtual environment**
+### 2. Create and activate virtual environment
 
 ```bash
-python -m venv .venv
+uv venv
+.venv\Scripts\activate        # Windows
+source .venv/bin/activate     # macOS/Linux
 ```
 
-3. **Activate the virtual environment**
-
-* **Windows (CMD)**:
+### 3. Install dependencies
 
 ```bash
-.venv\Scripts\activate
+uv pip install -r requirements.txt
 ```
 
-* **Linux / macOS**:
+### 4. Set up PostgreSQL
 
-```bash
-source .venv/bin/activate
+Create a database:
+
+```sql
+CREATE DATABASE mini_pms;
 ```
 
-4. **Install dependencies**
+### 5. Configure environment variables
 
-```bash
-pip install -r requirements.txt
-```
+Create a `.env` file in the root directory (see [Environment Variables](#environment-variables)).
 
-5. **Set up environment variables**
-
-Create a `.env` file based on `.env.example`:
-
-```
-DATABASE_URL=postgresql://username:password@localhost:5432/db_name
-SECRET_KEY=your_jwt_secret
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASSWORD=your_app_password
-STRIPE_API_KEY=your_stripe_key
-```
-
-6. **Run database migrations**
+### 6. Run Alembic migrations
 
 ```bash
 alembic upgrade head
 ```
 
-7. **Seed initial roles and permissions (RBAC)**
+### 7. Seed the database
 
 ```bash
-python seed_rbac.py
+python -m scripts.migrate_existing_users
+```
+
+This script:
+- Creates a Default tenant if none exists
+- Seeds all permissions and roles for every existing tenant
+- Migrates any users without a tenant to the Default tenant
+- Fixes any roles that have no permissions assigned
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the root:
+
+```env
+DATABASE_URL=postgresql://username:password@localhost:5432/mini_pms
+SECRET_KEY=your_secret_key_here
 ```
 
 ---
 
-## Running the Application
+## Running the App
 
 ```bash
-uvicorn app.main:app --reload
+uv run uvicorn main:app --reload
 ```
 
-The API will be available at `http://127.0.0.1:8000`.
+The API will be available at: `http://127.0.0.1:8000`
 
-* Interactive API documentation: `http://127.0.0.1:8000/docs`
-* Alternative ReDoc documentation: `http://127.0.0.1:8000/redoc`
+Interactive Swagger docs: `http://127.0.0.1:8000/docs`
 
 ---
 
-## API Endpoints Overview
+## Authentication Flow
 
-**Authentication**
+All protected endpoints require a Bearer token in the `Authorization` header:
 
-* `POST /auth/register` – Create a new user
-* `POST /auth/login` – Login and retrieve JWT token
-* `GET /auth/me` – Get current user information (protected)
+```
+Authorization: Bearer <your_jwt_token>
+```
 
-**Users**
+### Login
 
-* `GET /users/` – List all users (admin only)
-* `GET /users/{id}` – Get user details
-* `PATCH /users/{id}` – Update user info
-* `DELETE /users/{id}` – Delete user
+```http
+POST /auth/token
+Content-Type: application/x-www-form-urlencoded
 
-**Projects**
+username=user@example.com&password=yourpassword
+```
 
-* `POST /projects/` – Create project
-* `GET /projects/` – List projects
-* `GET /projects/{id}` – Retrieve a single project
-* `PATCH /projects/{id}` – Update project
-* `DELETE /projects/{id}` – Delete project
+Response:
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "tenant_id": 1
+}
+```
 
-**Payments**
+## Multi-Tenant Isolation
 
-* `POST /subscription/create` – Create subscription
-* `POST /subscription/cancel` – Cancel subscription
-* `POST /webhook` – Stripe webhook for payment events
+### How it works
 
-**Email Verification**
+Every major resource — `User`, `Project`, `Task`, `Role`, `Permission` — has a `tenant_id` foreign key. All queries for non-super-admin users are automatically filtered by `tenant_id` at the handler level.
 
-* `POST /email/verify` – Verify user email
-* `POST /email/resend` – Resend verification email
+### Tenant creation flow
+
+```
+Super Admin calls POST /users/register-tenant-admin
+    → New Tenant record is created
+    → admin and user roles are created for that tenant
+    → All 12 permissions are seeded for that tenant
+    → Correct permissions are assigned to each role
+    → Tenant Admin user is created with the admin role
+```
+
+### Data isolation rules
+
+- A Tenant Admin can only see and modify resources where `tenant_id` matches their own
+- A regular user can only modify resources they own (`owner_id == user.id`) within their tenant
+- The Super Admin bypasses all tenant checks and sees everything globally
+
+### Previous users (pre-multi-tenant)
+
+Users created before multi-tenant was implemented are assigned to the **Default** tenant via the migration script. They behave exactly like regular users scoped to that tenant.
 
 ---
 
 ## Notes
 
-* Make sure to **run migrations** before starting the application.
-* Ensure your SMTP settings are correct to send email notifications.
-* Use Stripe **sandbox keys** for testing payments to avoid real transactions.
-* RBAC and permissions must be seeded before creating users with specific roles.
-
----
-
-This README gives a **complete guide to setup, run, and explore** the Project Management API. It reflects all features merged from your branches: FastAPI fundamentals, JWT auth, RBAC, payment module, and email notifications.
-
+- Tokens expire after **30 minutes** by default. Re-login to get a fresh token.
+- When testing in Swagger, do not send `assigned_user_id: 0` in task requests — either omit the field or set it to `null`. The value `0` is not a valid user ID.
+- The Super Admin account must be created directly in the database or via a separate seeding script — there is no public registration endpoint for Super Admins by design.
