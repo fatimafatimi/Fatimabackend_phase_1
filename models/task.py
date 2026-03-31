@@ -1,3 +1,4 @@
+# models/task.py
 from sqlalchemy import Column, Integer, String, ForeignKey
 from database import Base
 from sqlalchemy.orm import relationship
@@ -8,7 +9,12 @@ class Task(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    status =  Column(String, default="pending", nullable=False)
+    status  = Column(String, default="pending", nullable=False)
+    
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
     project = relationship("Project", back_populates="tasks")
     
+    tenant_id = Column(Integer, nullable=False)
+    
+    assigned_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assigned_user = relationship("User", back_populates="tasks")

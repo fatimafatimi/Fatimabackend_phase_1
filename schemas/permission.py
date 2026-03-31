@@ -6,6 +6,8 @@ class PermissionCreate(BaseModel):
 class PermissionResponse(BaseModel):
     id: int
     name: str
-
+    tenant_id: int
+    
     class Config:
+        # orm_mode = True
         from_attributes = True

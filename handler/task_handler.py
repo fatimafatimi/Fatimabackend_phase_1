@@ -1,16 +1,34 @@
+# handler/task_handler.py
 from models.task import Task
 from models.project import Project
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, Depends, status
-from dependencies.auth import get_current_user
+from fastapi import HTTPException, status
 from models.user import User
 
-def create_task(db: Session, project_id: int, task, current_user: User = Depends(get_current_user)):
+
+def _get_project_or_404(db: Session, project_id: int, current_user: User):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not current_user.is_super_admin and project.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
 
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+
+def _can_modify_project(current_user: User, project: Project):
+    if current_user.is_super_admin:
+        return True
+    if current_user.role and current_user.role.name == "admin":
+        return True
+    if project.owner_id == current_user.id:
+        return True
+    return False
+
+
+def create_task(db: Session, project_id: int, task, current_user: User):
+    project = _get_project_or_404(db, project_id, current_user)
+
+    if not _can_modify_project(current_user, project):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to add tasks to this project"
@@ -20,22 +38,20 @@ def create_task(db: Session, project_id: int, task, current_user: User = Depends
         title=task.title,
         description=task.description,
         status="pending",
-        project_id=project_id
+        project_id=project_id,
+        tenant_id=project.tenant_id,
+        assigned_user_id=task.assigned_user_id 
     )
-
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
-
     return new_task
 
 
-def get_tasks_by_project(db: Session, project_id: int, current_user: User = Depends(get_current_user)):
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+def get_tasks_by_project(db: Session, project_id: int, current_user: User):
+    project = _get_project_or_404(db, project_id, current_user)
 
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+    if not _can_modify_project(current_user, project):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view tasks for this project"
@@ -44,40 +60,41 @@ def get_tasks_by_project(db: Session, project_id: int, current_user: User = Depe
     return db.query(Task).filter(Task.project_id == project_id).all()
 
 
-def update_task(db: Session, task_id: int, task, current_user: User = Depends(get_current_user)):
+def update_task(db: Session, task_id: int, task, current_user: User):
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    project = db.query(Project).filter(Project.id == db_task.project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Associated project not found")
+    project = _get_project_or_404(db, db_task.project_id, current_user)
 
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+    if not _can_modify_project(current_user, project):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update this task"
         )
 
-    for key, value in task.dict(exclude_unset=True).items():
+    update_data = task.dict(exclude_unset=True)
+
+   
+    if "assigned_user_id" in update_data and update_data["assigned_user_id"] == 0:
+        update_data["assigned_user_id"] = None
+
+    for key, value in update_data.items():
         setattr(db_task, key, value)
 
     db.commit()
     db.refresh(db_task)
-
     return db_task
 
 
-def delete_task(db: Session, task_id: int, current_user: User = Depends(get_current_user)):
+def delete_task(db: Session, task_id: int, current_user: User):
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    project = db.query(Project).filter(Project.id == db_task.project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Associated project not found")
+    project = _get_project_or_404(db, db_task.project_id, current_user)
 
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+    if not _can_modify_project(current_user, project):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete this task"
@@ -85,5 +102,4 @@ def delete_task(db: Session, task_id: int, current_user: User = Depends(get_curr
 
     db.delete(db_task)
     db.commit()
-
     return {"message": "Task deleted"}

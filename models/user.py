@@ -1,8 +1,9 @@
+# models/user.py
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
 from sqlalchemy import Boolean
-
+from models.tenant import Tenant
 
 class User(Base):
     __tablename__ = "users"
@@ -13,6 +14,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
 
     projects = relationship("Project", back_populates="owner")
+    tasks = relationship("Task", back_populates="assigned_user")
 
     role_id = Column(ForeignKey("roles.id"), nullable=False)
     role = relationship("Role", back_populates="users")
@@ -22,4 +24,8 @@ class User(Base):
   
     is_email_verified = Column(Boolean, default=False)
     
+    is_super_admin = Column(Boolean, default=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+
+    tenant = relationship("Tenant", back_populates="users")
     

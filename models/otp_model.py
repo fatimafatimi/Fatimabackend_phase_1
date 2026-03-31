@@ -1,7 +1,7 @@
+#models/otp_model.py
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from datetime import datetime
 from database import Base
-
 
 class OTP(Base):
     __tablename__ = "otp_codes"
@@ -14,5 +14,6 @@ class OTP(Base):
 
     expiry_time = Column(DateTime, nullable=False)
     is_used = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)  
 
     created_at = Column(DateTime, default=datetime.utcnow)

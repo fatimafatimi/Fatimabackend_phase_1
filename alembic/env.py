@@ -6,6 +6,9 @@ from alembic import context
 from models.user import User
 from models.role import Role
 from models.permission import Permission
+from models.tenant import Tenant
+from models.project import Project
+from models.payment import Payment
 
 target_metadata = Base.metadata
 

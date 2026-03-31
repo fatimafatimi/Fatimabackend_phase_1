@@ -6,6 +6,7 @@ class UserRegister(BaseModel):
     username: str
     email: str
     password: str
+    company_name: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str

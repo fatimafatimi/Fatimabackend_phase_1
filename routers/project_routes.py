@@ -1,3 +1,4 @@
+# routers/project_router.py
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from handler.project_handler import (
@@ -8,13 +9,14 @@ from handler.project_handler import (
     delete_project
 )
 from database import get_db
-from schemas.project_schema import ProjectCreate
+from schemas.project_schema import ProjectCreate, ProjectResponse
 from dependencies.permissions import require_permission
+
 
 project_router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
-@project_router.post("/")
+@project_router.post("/", response_model=ProjectResponse)
 def create_project_route(
     project_data: ProjectCreate,
     db: Session = Depends(get_db),
@@ -38,7 +40,7 @@ def list_projects_route(
     db: Session = Depends(get_db),
     current_user=Depends(require_permission("view_all_projects"))
 ):
-    return get_all_projects(db)
+    return get_all_projects(db, current_user)
 
 
 @project_router.get("/{project_id}")
@@ -47,7 +49,7 @@ def get_project_route(
     db: Session = Depends(get_db),
     current_user=Depends(require_permission("view_project"))
 ):
-    return get_project_by_id(db, project_id)
+    return get_project_by_id(db, project_id, current_user)
 
 
 @project_router.delete("/{project_id}")
@@ -57,3 +59,4 @@ def delete_project_route(
     current_user=Depends(require_permission("delete_project"))
 ):
     return delete_project(db, project_id, current_user)
+
