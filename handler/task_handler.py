@@ -4,6 +4,11 @@ from models.project import Project
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from models.user import User
+from websocket.events import (
+    task_created_event,
+    task_updated_event,
+    task_deleted_event
+)
 
 
 def _get_project_or_404(db: Session, project_id: int, current_user: User):
@@ -25,7 +30,7 @@ def _can_modify_project(current_user: User, project: Project):
     return False
 
 
-def create_task(db: Session, project_id: int, task, current_user: User):
+async def create_task(db: Session, project_id: int, task, current_user: User):
     project = _get_project_or_404(db, project_id, current_user)
 
     if not _can_modify_project(current_user, project):
@@ -45,6 +50,12 @@ def create_task(db: Session, project_id: int, task, current_user: User):
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
+
+    # WebSocket event
+    try:
+        await task_created_event(new_task)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
     return new_task
 
 
@@ -60,7 +71,7 @@ def get_tasks_by_project(db: Session, project_id: int, current_user: User):
     return db.query(Task).filter(Task.project_id == project_id).all()
 
 
-def update_task(db: Session, task_id: int, task, current_user: User):
+async def update_task(db: Session, task_id: int, task, current_user: User):
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -84,10 +95,16 @@ def update_task(db: Session, task_id: int, task, current_user: User):
 
     db.commit()
     db.refresh(db_task)
-    return db_task
 
+    #  WebSocket event
+    try:
+        await task_updated_event(db_task)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    return db_task    
+        
 
-def delete_task(db: Session, task_id: int, current_user: User):
+async def delete_task(db: Session, task_id: int, current_user: User):
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -100,6 +117,15 @@ def delete_task(db: Session, task_id: int, current_user: User):
             detail="You do not have permission to delete this task"
         )
 
+    project_id = db_task.project_id
+
     db.delete(db_task)
     db.commit()
-    return {"message": "Task deleted"}
+
+    # 🔔 WebSocket event
+    try:
+        await task_deleted_event(task_id, project_id)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    return {"message": "Task deleted"}    
+    

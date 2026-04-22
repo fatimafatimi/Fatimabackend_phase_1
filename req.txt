@@ -13,3 +13,6 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-multipart 
 authlib 
+redis>=4.0.0
+aioredis>=2.0.0
+
